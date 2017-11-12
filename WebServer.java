@@ -5,6 +5,7 @@
  * @author Abe Ramseyer
  * 9/28/2017
  */
+import net.spy.memcached.*;
 import java.io.*;
 import java.net.*;
 import java.util.*;
@@ -12,6 +13,8 @@ import java.util.concurrent.*;
 import java.lang.NumberFormatException;
 
 public final class WebServer {
+
+
     public static void main(String args[]) {
         
         // smaller servers probably have no more than 16 physical cores, note that increasing this
@@ -61,8 +64,18 @@ public final class WebServer {
     private static class HttpRequest implements Callable<Void> {
         private static final String CRLF = "\r\n";
         private Socket socket;
+
+        private static final String MEMCACHED_HOST = "10.110.10.170";
+        private static final int MEMCACHED_PORT = 12430;
+        private static MemcachedClient memcachedClient;
     
-        public HttpRequest(Socket socket) { 
+        static {
+            try {
+                memcachedClient = new MemcachedClient(new InetSocketAddress(MEMCACHED_HOST, MEMCACHED_PORT));
+            } catch (IOException e) { e.printStackTrace(); }
+        }
+ 
+        public HttpRequest(Socket socket) throws IOException { 
             this.socket = socket;
         }
     
@@ -72,6 +85,8 @@ public final class WebServer {
          */
         @Override
         public Void call() {
+            HttpRequest.putInCache("test", "this");
+            System.out.println(getFromCache("test"));
             try {
                 BufferedReader inFromClient = new BufferedReader(new InputStreamReader(socket.getInputStream()));
                 DataOutputStream outToClient = new DataOutputStream(socket.getOutputStream());
@@ -291,6 +306,14 @@ public final class WebServer {
                 return file;
             else
                 return null;
+        }
+
+        private static void putInCache(String key, Object value) {
+            memcachedClient.set(key, 0, value);
+        }
+
+        private static Object getFromCache(String key) {
+            return memcachedClient.get(key);
         }
     }
 }
