@@ -41,7 +41,7 @@ public class SimpleServer{
 				while((bytes = fis.read(buffer)) != -1){
 					os.write(buffer, 0, bytes);
 				}	
-			
+				fis.close();
 				os.close();
 			}
 			else if(method.equals("POST")){
@@ -51,11 +51,53 @@ public class SimpleServer{
 				}
 				
 				InputStream is = t.getRequestBody();
+				
+				//This try catch is supposed to read incoming file line by line to get the text file.
+				//It then attempts to write the information to a file by converting strings to byte arrays. Currently doesn't work.
+				/*try (BufferedReader br = new BufferedReader(new InputStreamReader(is))) {
+   					String line = null;
+   					String fileName = null;
+   					for(int i = 0; i < 4; i++){
+   						if(i == 1){
+   							fileName = br.readLine();
+   							int index = fileName.indexOf("filename=");
+   							fileName = fileName.substring(index + 10, fileName.length() -1);
+   							System.out.println(fileName);
+   						}
+   						else
+   							System.out.println(br.readLine());
+   					}
+   					System.out.println("********");
+   					
+					FileOutputStream fos = null;
+					try{
+						fos = new FileOutputStream(new File("./" + fileName));
+					}
+					catch(IOException e){
+						System.out.println("Could not write to file.");
+					}
+					
+					while((line = br.readLine()) != null) {
+						if(line.contains("-----"))
+							break;
+						
+						fos.write(line.getBytes(), 0, bytes);
+						System.out.println(line.getBytes());
+					}
+					fos.close();
+				} catch (IOException e) {
+					e.printStackTrace();
+				}*/		
+				
+				//This code works but it has stuff attached to it so writing doesn't create a valid file. Unless it is text.
+				//We need to find a way to seperate the rest of the body from file text.
+				//This website might be of use
+				//https://leonardom.wordpress.com/2009/08/06/getting-parameters-from-httpexchange/
 				byte[] buffer = new byte[1024];
 				int bytes = 0;
 				FileOutputStream fos = null;
 				try{
-					fos = new FileOutputStream(new File("./testText.txt"));
+					fos = new FileOutputStream(new File("./testText"));
 				}
 				catch(IOException e){
 					System.out.println("Could not write to file.");
@@ -67,8 +109,12 @@ public class SimpleServer{
 				}
 				System.out.println("Outside write loop");
 				fos.close();
+				
+				
 				is.close();
 				t.close();
+				
+				
 			}
 		}
 	}
