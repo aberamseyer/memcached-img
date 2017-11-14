@@ -1,0 +1,27 @@
+<!doctype html>
+
+<html>
+	<head>
+		<title>PNGur</title>
+	</head>
+	<body>
+		<h1>PNGur</h1>
+		
+		
+		<form action="./viewResults.html" method="get">
+			<input type="text" name = "Search" value = "Dank Memes"/>
+			<input type = "submit" value = "View Image"/>
+		</form>
+		<form id = "uploadForm" enctype="multipart/form-data" method = "post" action = "upload">
+			<input type="hidden" name="MAX_FILE_SIZE" value="100000" />
+			<input type="file" id="myFile">
+			<input type="submit" value="upload" id="uploadButton">
+		</form>
+		<script>
+			function myFunction() {
+			    var x = document.getElementById("myFile");
+			    x.disabled = true;
+			}
+		</script>
+	</body>
+</html>
