@@ -55,19 +55,20 @@ public class SimpleServer{
 				int bytes = 0;
 				FileOutputStream fos = null;
 				try{
-					fos = new FileOutputStream(new File("./testPic.jpg"));
+					fos = new FileOutputStream(new File("./testText.txt"));
 				}
 				catch(IOException e){
 					System.out.println("Could not write to file.");
 				}
 				
 				while((bytes = is.read(buffer)) != -1){
-					System.out.println("In write loop");
+					System.out.println("In write loop" + bytes);
 					fos.write(buffer, 0, bytes);
 				}
 				System.out.println("Outside write loop");
 				fos.close();
 				is.close();
+				t.close();
 			}
 		}
 	}

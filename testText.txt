@@ -1,0 +1,25 @@
+-----------------------------121817978316608401541633121371
+Content-Disposition: form-data; name="file"; filename="testText.txt"
+Content-Type: text/plain
+
+Test text document
+asdf
+asdf
+asd
+fasd
+fasd
+fa
+sdfa
+sdfa
+sdfa
+sdfa
+sdfa
+sdf
+asdf
+asdfasdddddddd
+
+-----------------------------121817978316608401541633121371
+Content-Disposition: form-data; name="upload"
+
+Upload
+-----------------------------121817978316608401541633121371--

@@ -12,11 +12,10 @@
 			<input type="text" name = "Search" value = "Dank Memes"/>
 			<input type = "submit" value = "View Image"/>
 		</form>
-		<form id = "uploadForm" enctype="multipart/form-data" method = "post" action = "upload">
-			<input type="hidden" name="MAX_FILE_SIZE" value="100000" />
-			<input type="file" id="myFile">
-			<input type="submit" value="upload" id="uploadButton">
-		</form>
+		<form method="POST" action="./index.html" enctype="multipart/form-data" >
+          		<input type="file" name="file" id="file" />
+        		<input type="submit" value="Upload" name="upload" id="upload" />
+      		</form>
 		<script>
 			function myFunction() {
 			    var x = document.getElementById("myFile");
