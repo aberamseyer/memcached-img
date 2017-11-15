@@ -24,25 +24,67 @@ public class SimpleServer{
 			
 			if(method.equals("GET")){
 				String requestPage = t.getRequestURI().toString();
-				requestPage = "." + requestPage;
-				System.out.println(requestPage);
-				FileInputStream fis = null;
-				try {
-					fis = new FileInputStream(requestPage);
-				} catch (FileNotFoundException e) {
-					System.out.println("Could not open the file");
+				//System.out.println(requestPage);
+				//System.out.println(requestPage.contains("="));
+				if(requestPage.contains("=")){//If there is a search then this method handles it.
+					requestPage = requestPage.substring(requestPage.indexOf("=") + 1, requestPage.length());
+					requestPage = requestPage.replace("+", "");
+					requestPage = requestPage.toLowerCase();
+					System.out.println(requestPage);
+					//^^^Above code gets the search result and deletes spaces and makes it lowercase
+					
+					String html = createHTML(requestPage);//Gets html that is returned
+					
+					//Writes to the viewResults.html page (overwrites file)
+					File file = new File("viewResults.html");
+					FileWriter fw = new FileWriter(file, false);
+					fw.write(html);
+					fw.close();
+					
+					//vvvvv Reads from the results page and uploads it
+					FileInputStream fis = null;
+					try {
+						fis = new FileInputStream("./viewResults.html");
+					} catch (FileNotFoundException e) {
+						System.out.println("Could not open the file");
+					}
+					byte[] buffer = new byte[1024];
+					int bytes = 0;
+				
+					t.sendResponseHeaders(200, 0);
+					OutputStream os = t.getResponseBody();
+			
+					while((bytes = fis.read(buffer)) != -1){
+						os.write(buffer, 0, bytes);
+					}	
+					fis.close();
+					os.close();
+					//^^^^^
+					
 				}
-				byte[] buffer = new byte[1024];
-				int bytes = 0;
+				else{
+					//vvvvv Returns index page
+					requestPage = "." + requestPage;
+					System.out.println(requestPage);
+					FileInputStream fis = null;
+					try {
+						fis = new FileInputStream(requestPage);
+					} catch (FileNotFoundException e) {
+						System.out.println("Could not open the file");
+					}
+					byte[] buffer = new byte[1024];
+					int bytes = 0;
+				
+					t.sendResponseHeaders(200, 0);
+					OutputStream os = t.getResponseBody();
 			
-				t.sendResponseHeaders(200, 0);
-				OutputStream os = t.getResponseBody();
-			
-				while((bytes = fis.read(buffer)) != -1){
-					os.write(buffer, 0, bytes);
-				}	
-				fis.close();
-				os.close();
+					while((bytes = fis.read(buffer)) != -1){
+						os.write(buffer, 0, bytes);
+					}	
+					fis.close();
+					os.close();
+					//^^^^^
+				}
 			}
 			else if(method.equals("POST")){
 				Headers header = t.getRequestHeaders();
@@ -117,6 +159,28 @@ public class SimpleServer{
 				
 			}
 		}
+	}
+	
+	/*
+		This method takes a string and will search the library for files that contain the string.
+		The method then dynamically generates the html and returns it as a string.
+	*/
+	private static String createHTML(String searchString){
+		StringBuilder strBld = new StringBuilder();
+		File folder = new File("./Pictures/");
+		File[] directory = folder.listFiles();
+		strBld.append("<html>\n");
+		strBld.append("<head>\n\n</head>\n");
+		strBld.append("<body>\n");
+		strBld.append("<h1>Results for " + searchString + "</h1>\n");
+		for(int i = 0; i < directory.length; i++){
+			if(directory[i].isFile() && directory[i].getName().contains(searchString)){
+				strBld.append("<img src=\"./Pictures/" +  directory[i].getName() + "\" alt=\"" + directory[i].getName() + "\" style=\"height:300px;\"></br>\n");
+			}
+		}
+		strBld.append("</body>\n");
+		strBld.append("</html>\n");
+		return strBld.toString();
 	}
 
 }
