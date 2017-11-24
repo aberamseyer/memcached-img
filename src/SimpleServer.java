@@ -6,11 +6,31 @@ import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
 import com.sun.net.httpserver.HttpServer;
 import com.sun.net.httpserver.Headers;
+import net.spy.memcached.*;
 
 public class SimpleServer{
+    static final String MEMCACHED_HOST = "10.110.10.170";
+    static final int MEMCACHED_PORT = 12440;
+    static MemcachedClient memcachedClient;
+
+    private static void putInCache(String key, Object value) {
+        memcachedClient.set(key, 0, value);
+    }
+
+    private static Object getFromCache(String key) {
+        return memcachedClient.get(key);
+    }
 
 	public static void main(String[] args) throws Exception {
-		HttpServer server = HttpServer.create(new InetSocketAddress(12250), 0);
+        try {
+            memcachedClient = new MemcachedClient(new InetSocketAddress(MEMCACHED_HOST, MEMCACHED_PORT));
+        } catch (IOException e) {
+            e.printStackTrace(); 
+            System.err.println("\n\n could not connect to memcached host, exiting.");
+            System.exit(1);
+        }
+        
+        HttpServer server = HttpServer.create(new InetSocketAddress(12250), 0);
 		server.createContext("/", new MyHandler());
 		server.setExecutor(null); // creates a default executor
 		server.start();

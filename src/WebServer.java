@@ -10,8 +10,21 @@ import java.net.*;
 import java.util.*;
 import java.util.concurrent.*;
 import java.lang.NumberFormatException;
+import net.spy.memcached.*;
 
 public final class WebServer {
+    static final String MEMCACHED_HOST = "10.110.10.170";
+    static final int MEMCACHED_PORT = 12250;
+    static MemcachedClient memcachedClient;
+
+    private static void putInCache(String key, Object value) {
+        memcachedClient.set(key, 0, value);
+    }
+
+    private static byte[] getFromCache(String key) {
+        return (byte[]) memcachedClient.get(key);
+    }
+    
     public static void main(String args[]) {
         
         // smaller servers probably have no more than 16 physical cores, note that increasing this
@@ -61,7 +74,18 @@ public final class WebServer {
     private static class HttpRequest implements Callable<Void> {
         private static final String CRLF = "\r\n";
         private Socket socket;
+        private String fileName = "index.html";
     
+        static {
+            try {
+                memcachedClient = new MemcachedClient(new InetSocketAddress(MEMCACHED_HOST, MEMCACHED_PORT));
+            } catch (IOException e) {
+                e.printStackTrace(); 
+                System.err.println("\n\n could not connect to memcached host, exiting.");
+                System.exit(1);
+            }
+        }
+        
         public HttpRequest(Socket socket) { 
             this.socket = socket;
         }
@@ -79,34 +103,95 @@ public final class WebServer {
                 String requestLine = inFromClient.readLine();
 
                 // synchronized ensures that these print statements won't mix with other threads'
-                synchronized(System.out) {
-                    System.out.println("---------- Begin client request header -----");
-                    System.out.println(requestLine);
-    
-                    String headerLine = "";
-                    while((headerLine = inFromClient.readLine()).length() != 0) {
-                        System.out.println(headerLine);
-                    }
-                    System.out.println("----------- End client header------------\n\n");
-                }   
+//                synchronized(System.out) {
+//                    System.out.println("---------- Begin client request header -----");
+//                    System.out.println(requestLine);
+//    
+//                    String headerLine = "";
+//                    long size = 0;
+//                    while((headerLine = inFromClient.readLine()).length() != 0) {
+//                    	if(headerLine.contains("Content-Length: "))
+//                    		try {
+//                    			size = Long.parseLong(headerLine.substring(headerLine.lastIndexOf(" ")+1));
+//                    			System.out.println("length of file is: " + size);
+//                    		} catch (NumberFormatException e) {
+//                    			System.err.println("couldnt read content length");
+//                    		}
+//                        System.out.println(headerLine);
+//                    }
+//                    System.out.println("----------- End client header------------\n\n");
+//                }   
 
                 StringTokenizer tokens = new StringTokenizer(requestLine);
                 String method = tokens.nextToken();
 
-                if(!method.equals("GET")) { // verify the method is GET
-                    System.err.println("Unsupported method request " + method); 
-                    return null; // return because the method should not be handled by this server
-                }  
+//                if(!method.equals("GET")) { // verify the method is GET
+//                    System.err.println("Unsupported method request " + method); 
+//                    return null; // return because the method should not be handled by this server
+//                }  
+                if(method.equals("POST")) {
+                	// read the stream here
+//                	socket.getInputStream().readNBytes(arg0, arg1, arg2) something like this
+                }
 
-                String fileName = tokens.nextToken();
+                String requestPage = tokens.nextToken();
+                fileName = requestPage;
+//				if(requestPage.contains("=")){//If there is a search then this method handles it.
+//					fileName = requestPage.substring(0, requestPage.lastIndexOf("?"));
+//					requestPage = requestPage.substring(requestPage.indexOf("=") + 1, requestPage.length());
+//					requestPage = requestPage.replace("+", "");
+//					requestPage = requestPage.toLowerCase();
+//					System.out.println(requestPage);
+//					//^^^Above code gets the search result and deletes spaces and makes it lowercase
+//					
+//					String html = createHTML(requestPage);//Gets html that is returned
+//					
+//					//Writes to the viewResults.html page (overwrites file)
+//					File file = new File("viewResults.html");
+//					FileWriter fw = new FileWriter(file, false);
+//					fw.write(html);
+//					fw.close();
+//					
+//					//vvvvv Reads from the results page and uploads it
+//					FileInputStream fis = null;
+//					try {
+//						fis = new FileInputStream("./viewResults.html");
+//					} catch (FileNotFoundException e) {
+//						System.out.println("Could not open the file");
+//					}
+//					byte[] buffer = new byte[1024];
+//					int bytes = 0;
+//				
+//					t.sendResponseHeaders(200, 0);
+//					OutputStream os = t.getResponseBody();
+//			
+//					while((bytes = fis.read(buffer)) != -1){
+//						os.write(buffer, 0, bytes);
+//					}	
+//					fis.close();
+//					os.close();
+//					//^^^^^
+//					
+//				}
 
                 // attempt to open the requested file
-                FileInputStream file = null;
+                InputStream file = null;
                 File fileObj = null;
                 fileObj = locateFile(fileName);
+                
                 if(fileObj != null) {
                     fileName = fileObj.getPath();
-                    file = new FileInputStream(fileObj);
+                    
+                    if(getFromCache(fileName) == null)	{// if not in the cache, read normally
+                    	file = new FileInputStream(fileObj);
+                    	byte[] fileBytes = file.readAllBytes();
+                    	putInCache(fileName, fileBytes);
+                    	System.out.println("STORED IN CACHE at: " + fileName);
+                    }
+                    else {
+                    	System.out.println("CACHE HIT");
+                    }
+                    file = new ByteArrayInputStream(getFromCache(fileName));
                 }   
     
                 // Construct the response message
@@ -149,12 +234,12 @@ public final class WebServer {
 
                 // log the headers that were sent to client
                 // synchronized ensures the order of print statements won't mix with those in other threads
-                synchronized(System.out) {
-                    System.out.println("---------- Begin server response header ------");
-                    System.out.println(statusLine);
-                    System.out.println(contentTypeLine);
-                    System.out.println("---------- End server response header --------\n\n");
-                }
+//                synchronized(System.out) {
+//                    System.out.println("---------- Begin server response header ------");
+//                    System.out.println(statusLine);
+//                    System.out.println(contentTypeLine);
+//                    System.out.println("---------- End server response header --------\n\n");
+//                }
 
                 if(file != null) {
                     try {
@@ -182,6 +267,7 @@ public final class WebServer {
     
             } catch (IOException e) {
                 System.err.println("Error while sending response headers");
+                e.printStackTrace();
             } finally {
                 try {
                     socket.close();
@@ -194,42 +280,17 @@ public final class WebServer {
             return null;
         }
     
-        /*
-         * determines a the content type of the file request based on file extension
-         */
-        private static String contentType(String file) {
-            if(file.endsWith(".html") || file.endsWith(".htm"))
-                return "text/html; charset=UTF-8";
-            else if(file.endsWith(".css"))
-                return "text/css; charset=UTF-8";
-            else if(file.endsWith(".js"))
-                return "text/javascript; charset=UTF-8";
-            else if(file.endsWith(".gif"))
-                return "image/gif";
-            else if(file.endsWith(".jpg") || file.endsWith(".jpeg"))
-                return "image/jpeg";
-            else if(file.endsWith(".png"))
-                return "image/png";
-            else if(file.endsWith(".pdf"))
-                return "application/pdf";
-            
-            return "unknown"; // This case should never be encountered because this method only executes
-                              // if the file is found, and our server should support any kind of file that
-                              // is stored on its working directory. If a filetype unsupported by this method is legitimately 
-                              // requested, a check where this method is called removes the content-type response line per
-                              // tools.ietf.org/html/rfc7231#section-3.1.1.5h 
-                              // "A sender that generates a message containing a payload body SHOULD
-                              //  generate a Content-Type header field in that message unless the
-                              //  intended media type of the enclosed representation is unknown to the
-                              //  sender."
-        }       
         
         /*
          * writes the contents of a specified file out to the the client
          */
-        private static void sendBytes(FileInputStream file, DataOutputStream outToClient) throws IOException {
+        private void sendBytes(InputStream file, DataOutputStream outToClient) throws IOException {
             byte[] buffer = new byte[1024];
             int bytes = 0;
+            if(file == null) {
+            	file = new FileInputStream(new File(fileName));
+            	System.err.println("file was lost from cache");
+            }
             // copy requested file into the socket's output stream using a buffer
             // synchronize the FileInputStream object so multiple threads can't read from the same file at a time
             synchronized (file) {
@@ -260,16 +321,16 @@ public final class WebServer {
 
             // case 1: will convert /index.html/styles.css -> styles.css
             // case 2: will convert /index.html/ -> /index.html
-            try {
-                if(fileName.lastIndexOf("/") != fileName.indexOf("/")) { // checking if multiple '/' exist 
-                    if(fileName.lastIndexOf(".") != fileName.indexOf(".")) // checking if multiple '.' exist
-                        fileName = fileName.split("/")[2]; // case 1 
-                    else
-                        fileName = fileName.split("/")[1]; // case 2 
-                }
-            } catch (ArrayIndexOutOfBoundsException e) { // encountered a case that breaks these checks in case I didn't think of everything
-                return null;
-            }
+//            try {
+//                if(fileName.lastIndexOf("/") != fileName.indexOf("/")) { // checking if multiple '/' exist 
+//                    if(fileName.lastIndexOf(".") != fileName.indexOf(".")) // checking if multiple '.' exist
+//                        fileName = fileName.split("/")[2]; // case 1 
+//                    else
+//                        fileName = fileName.split("/")[1]; // case 2 
+//                }
+//            } catch (ArrayIndexOutOfBoundsException e) { // encountered a case that breaks these checks in case I didn't think of everything
+//                return null;
+//            }
 
             file = new File(fileName);
             if(file.exists())
@@ -292,5 +353,38 @@ public final class WebServer {
             else
                 return null;
         }
+        
+        /*
+         * determines a the content type of the file request based on file extension
+         */
+        private static String contentType(String file) {
+            if(file.endsWith(".html") || file.endsWith(".htm"))
+                return "text/html; charset=UTF-8";
+            else if(file.endsWith(".css"))
+                return "text/css; charset=UTF-8";
+            else if(file.endsWith(".js"))
+                return "text/javascript; charset=UTF-8";
+            else if(file.endsWith(".gif"))
+                return "image/gif";
+            else if(file.endsWith(".jpg") || file.endsWith(".jpeg"))
+                return "image/jpeg";
+            else if(file.endsWith(".png"))
+                return "image/png";
+            else if(file.endsWith(".pdf"))
+                return "application/pdf";
+            
+            return "unknown"; // This case should never be encountered because this method only executes
+                              // if the file is found, and our server should support any kind of file that
+                              // is stored on its working directory. If a filetype unsupported by this method is legitimately 
+                              // requested, a check where this method is called removes the content-type response line per
+                              // tools.ietf.org/html/rfc7231#section-3.1.1.5h 
+                              // "A sender that generates a message containing a payload body SHOULD
+                              //  generate a Content-Type header field in that message unless the
+                              //  intended media type of the enclosed representation is unknown to the
+                              //  sender."
+        }       
+
     }
+    
+    
 }
