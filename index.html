@@ -1,0 +1,26 @@
+<!doctype html>
+
+<html>
+	<head>
+		<title>PNGur</title>
+	</head>
+	<body>
+		<h1>PNGur</h1>
+		
+		<img src="Pictures/starwars.png">
+		<form action="./viewResults.html" method="get">
+			<input type="text" name = "Search" value = "Dank Memes"/>
+			<input type = "submit" value = "View Image"/>
+		</form>
+		<form method="POST" action="./index.html" enctype="multipart/form-data" accept="image/gif,image/jpeg">
+          		<input type="file" name="file" id="file" />
+        		<input type="submit" value="Upload" name="upload" id="upload" />
+      		</form>
+		<script>
+			function myFunction() {
+			    var x = document.getElementById("myFile");
+			    x.disabled = true;
+			}
+		</script>
+	</body>
+</html>
