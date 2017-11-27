@@ -181,7 +181,7 @@ public final class WebServer {
 //				}
 
                 // attempt to open the requested file
-                InputStream file = null;
+                InputStream fileInputStream = null;
                 File fileObj = null;
                 fileObj = locateFile(fileName);
                 
@@ -189,15 +189,15 @@ public final class WebServer {
                     fileName = fileObj.getPath();
                     
                     if(getFromCache(fileName) == null)	{// if not in the cache, read normally
-                    	file = new FileInputStream(fileObj);
-                    	byte[] fileBytes = file.readAllBytes();
+                    	fileInputStream = new FileInputStream(fileObj);
+                    	byte[] fileBytes = readAllBytes(fileInputStream);
                     	putInCache(fileName, fileBytes);
                     	System.out.println("STORED IN CACHE at: " + fileName);
                     }
                     else {
                     	System.out.println("CACHE HIT");
                     }
-                    file = new ByteArrayInputStream(getFromCache(fileName));
+                    fileInputStream = new ByteArrayInputStream(getFromCache(fileName));
                 }   
     
                 // Construct the response message
@@ -206,7 +206,7 @@ public final class WebServer {
                 String entityBody = "";
 
                 // normal response
-                if(file != null) {
+                if(fileInputStream != null) {
                     statusLine = "HTTP/1.1 200 OK";
                     String contentType = contentType(fileName);
                     if(!contentType.equals("unknown"))
@@ -247,16 +247,16 @@ public final class WebServer {
 //                    System.out.println("---------- End server response header --------\n\n");
 //                }
 
-                if(file != null) {
+                if(fileInputStream != null) {
                     try {
-                        sendBytes(file, outToClient); // handle exceptions thrown by .read() and .write()
-                        file.close();
+                        sendBytes(fileInputStream, outToClient); // handle exceptions thrown by .read() and .write()
+                        fileInputStream.close();
                         System.out.println("Sent file " + fileName + " to " + socket.getInetAddress() + ":" + socket.getPort() + "\n");
                     } catch (IOException e) {
                         System.err.println("Exception while reading and sending file");
                     } finally {
                         try {
-                            file.close();
+                            fileInputStream.close();
                         } catch (IOException exc) {
                             // we tried
                         }
@@ -287,7 +287,22 @@ public final class WebServer {
         }
     
         
-        /*
+        private byte[] readAllBytes(InputStream fileInputStream) {
+        	ByteArrayOutputStream os = new ByteArrayOutputStream();
+        	int nRead;
+        	byte[] data = new byte[4096];
+        	try {
+				while((nRead = fileInputStream.read(data, 0, data.length)) != -1) {
+					os.write(data, 0, nRead);
+				}
+	        	os.flush();
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+        	return os.toByteArray();
+		}
+
+		/*
          * writes the contents of a specified file out to the the client
          */
         private void sendBytes(InputStream file, DataOutputStream outToClient) throws IOException {
