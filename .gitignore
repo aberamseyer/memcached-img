@@ -1,13 +1,7 @@
 *.class
-<<<<<<< HEAD
 *.swp
-||||||| merged common ancestors
-
-=======
-
-/
 build/
 .settings/
 .classpath
 .project
->>>>>>> SimpleServer
+viewResults.html
