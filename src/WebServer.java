@@ -366,7 +366,7 @@ public final class WebServer {
 		*/
 		private static String createHTML(String searchString){
 			StringBuilder strBld = new StringBuilder();
-			File folder = new File("./Pictures/");
+			File folder = new File("./pictures/");
 			File[] directory = folder.listFiles();
 			strBld.append("<html>\n");
 			strBld.append("<head>\n\n</head>\n");
@@ -374,7 +374,7 @@ public final class WebServer {
 			strBld.append("<h1>Results for " + searchString + "</h1>\n");
 			for(int i = 0; i < directory.length; i++){
 				if(directory[i].isFile() && directory[i].getName().contains(searchString)){
-					strBld.append("<img src=\"./Pictures/" +  directory[i].getName() + "\" alt=\"" + directory[i].getName() + "\" style=\"height:300px;\"></br>\n");
+					strBld.append("<img src=\"./pictures/" +  directory[i].getName() + "\" alt=\"" + directory[i].getName() + "\" style=\"height:300px;\"></br>\n");
 				}
 			}
 			strBld.append("</body>\n");
