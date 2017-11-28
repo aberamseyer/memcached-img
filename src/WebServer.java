@@ -108,77 +108,32 @@ public final class WebServer {
                 
                 String requestLine = inFromClient.readLine();
 
-                // synchronized ensures that these print statements won't mix with other threads'
-//                synchronized(System.out) {
-//                    System.out.println("---------- Begin client request header -----");
-//                    System.out.println(requestLine);
-//    
-//                    String headerLine = "";
-//                    long size = 0;
-//                    while((headerLine = inFromClient.readLine()).length() != 0) {
-//                    	if(headerLine.contains("Content-Length: "))
-//                    		try {
-//                    			size = Long.parseLong(headerLine.substring(headerLine.lastIndexOf(" ")+1));
-//                    			System.out.println("length of file is: " + size);
-//                    		} catch (NumberFormatException e) {
-//                    			System.err.println("couldnt read content length");
-//                    		}
-//                        System.out.println(headerLine);
-//                    }
-//                    System.out.println("----------- End client header------------\n\n");
-//                }   
-
                 StringTokenizer tokens = new StringTokenizer(requestLine);
                 String method = tokens.nextToken();
 
-//                if(!method.equals("GET")) { // verify the method is GET
-//                    System.err.println("Unsupported method request " + method); 
-//                    return null; // return because the method should not be handled by this server
-//                }  
-                if(method.equals("POST")) {
-                	// read the stream here
-//                	socket.getInputStream().readNBytes(arg0, arg1, arg2) something like this
-                }
+                //if(method.equals("POST")) {
+					
+                //}
 
                 String requestPage = tokens.nextToken();
                 fileName = requestPage;
-//				if(requestPage.contains("=")){//If there is a search then this method handles it.
-//					fileName = requestPage.substring(0, requestPage.lastIndexOf("?"));
-//					requestPage = requestPage.substring(requestPage.indexOf("=") + 1, requestPage.length());
-//					requestPage = requestPage.replace("+", "");
-//					requestPage = requestPage.toLowerCase();
-//					System.out.println(requestPage);
-//					//^^^Above code gets the search result and deletes spaces and makes it lowercase
-//					
-//					String html = createHTML(requestPage);//Gets html that is returned
-//					
-//					//Writes to the viewResults.html page (overwrites file)
-//					File file = new File("viewResults.html");
-//					FileWriter fw = new FileWriter(file, false);
-//					fw.write(html);
-//					fw.close();
-//					
-//					//vvvvv Reads from the results page and uploads it
-//					FileInputStream fis = null;
-//					try {
-//						fis = new FileInputStream("./viewResults.html");
-//					} catch (FileNotFoundException e) {
-//						System.out.println("Could not open the file");
-//					}
-//					byte[] buffer = new byte[1024];
-//					int bytes = 0;
-//				
-//					t.sendResponseHeaders(200, 0);
-//					OutputStream os = t.getResponseBody();
-//			
-//					while((bytes = fis.read(buffer)) != -1){
-//						os.write(buffer, 0, bytes);
-//					}	
-//					fis.close();
-//					os.close();
-//					//^^^^^
-//					
-//				}
+				if(requestPage.contains("=")){	//If there is a search then this method handles it.
+					fileName = requestPage.substring(0, requestPage.lastIndexOf("?"));
+					requestPage = requestPage.substring(requestPage.indexOf("=") + 1, requestPage.length());
+					requestPage = requestPage.replace("+", "");
+					requestPage = requestPage.toLowerCase();
+					System.out.println(requestPage);
+					//^^^Above code gets the search result and deletes spaces and makes it lowercase
+					
+					String html = createHTML(requestPage);//Gets html that is returned
+					//Writes to the viewResults.html page (overwrites file)
+					File file = new File("viewResults.html");
+					FileWriter fw = new FileWriter(file, false);
+					fw.write(html);
+					fw.close();
+					
+					fileName = "viewResults.html";
+				}
 
                 // attempt to open the requested file
                 InputStream fileInputStream = null;
@@ -188,7 +143,7 @@ public final class WebServer {
                 if(fileObj != null) {
                     fileName = fileObj.getPath();
                     
-                    if(getFromCache(fileName) == null)	{// if not in the cache, read normally
+                    if(getFromCache(fileName) == null || fileName.equals("viewResults.html"))	{// if not in the cache, read normally
                     	fileInputStream = new FileInputStream(fileObj);
                     	byte[] fileBytes = readAllBytes(fileInputStream);
                     	putInCache(fileName, fileBytes);
@@ -236,7 +191,7 @@ public final class WebServer {
 
                 // see comment in contentType() for explanation
                 //if(contentTypeLine != null)
-                    outToClient.writeBytes(contentTypeLine + CRLF + CRLF);
+                outToClient.writeBytes(contentTypeLine + CRLF + CRLF);
 
                 // log the headers that were sent to client
                 // synchronized ensures the order of print statements won't mix with those in other threads
@@ -403,9 +358,28 @@ public final class WebServer {
                               //  generate a Content-Type header field in that message unless the
                               //  intended media type of the enclosed representation is unknown to the
                               //  sender."
-        }       
+        }
 
-    }
-    
-    
+		/*
+			This method takes a string and will search the library for files that contain the string.
+			The method then dynamically generates the html and returns it as a string.
+		*/
+		private static String createHTML(String searchString){
+			StringBuilder strBld = new StringBuilder();
+			File folder = new File("./Pictures/");
+			File[] directory = folder.listFiles();
+			strBld.append("<html>\n");
+			strBld.append("<head>\n\n</head>\n");
+			strBld.append("<body>\n");
+			strBld.append("<h1>Results for " + searchString + "</h1>\n");
+			for(int i = 0; i < directory.length; i++){
+				if(directory[i].isFile() && directory[i].getName().contains(searchString)){
+					strBld.append("<img src=\"./Pictures/" +  directory[i].getName() + "\" alt=\"" + directory[i].getName() + "\" style=\"height:300px;\"></br>\n");
+				}
+			}
+			strBld.append("</body>\n");
+			strBld.append("</html>\n");
+			return strBld.toString();
+		}		
+    }    
 }
